@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Globe, Image, Save, Loader, AlertCircle, CheckCircle, Trash2, Ban, UserCheck, Users, Calendar, MessageSquare, Mail, Crown, Shield, Settings, Camera, Eye, EyeOff } from 'lucide-react';
+import { User, Globe, Image, Save, Loader, AlertCircle, CheckCircle, Trash2, Ban, UserCheck, Users, Calendar, MessageSquare, Mail, Crown, Shield, Settings, Camera, Eye, EyeOff, Upload, X, Plus, Edit3, Lock, Unlock } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ParticleNetwork from '../components/ParticleNetwork';
@@ -36,6 +36,7 @@ const EditProfilePage: React.FC = () => {
     const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
     const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(user?.profile_picture_url || null);
     const [clearProfilePicture, setClearProfilePicture] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
 
     // Admin action states
     const [targetUserId, setTargetUserId] = useState('');
@@ -77,6 +78,29 @@ const EditProfilePage: React.FC = () => {
             setClearProfilePicture(false);
         } else {
             setProfilePictureFile(null);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        
+        const files = e.dataTransfer.files;
+        if (files && files[0] && files[0].type.startsWith('image/')) {
+            const file = files[0];
+            setProfilePictureFile(file);
+            setProfilePicturePreview(URL.createObjectURL(file));
+            setClearProfilePicture(false);
         }
     };
 
@@ -203,6 +227,18 @@ const EditProfilePage: React.FC = () => {
         }
     };
 
+    const getGroupColor = (group: string) => {
+        switch (group) {
+            case 'Owner': return 'from-red-500 to-orange-500';
+            case 'Admin': return 'from-purple-500 to-pink-500';
+            case 'Senior Support': return 'from-blue-500 to-cyan-500';
+            case 'Support': return 'from-green-500 to-emerald-500';
+            case 'Junior Support': return 'from-yellow-500 to-orange-500';
+            case 'Premium Plan': return 'from-indigo-500 to-purple-500';
+            default: return 'from-gray-500 to-gray-600';
+        }
+    };
+
     if (authLoading || !user) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -224,46 +260,59 @@ const EditProfilePage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="text-center mb-12">
                         <div className="inline-flex items-center space-x-3 glass-morphism rounded-full px-8 py-4 mb-8 border border-white/20 shadow-lg">
-                            <Settings className="h-6 w-6 text-blue-400 animate-pulse" />
-                            <span className="text-white font-bold text-lg">Profile Management</span>
+                            <Edit3 className="h-6 w-6 text-blue-400 animate-pulse" />
+                            <span className="text-white font-bold text-lg">Profile Editor</span>
                             <User className="h-6 w-6 text-green-400" />
                         </div>
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
-                            Edit Your
+                            Customize Your
                             <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-green-400 bg-clip-text text-transparent"> 
                                 Profile
                             </span>
                         </h1>
                         <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-                            Customize your profile information and manage your account settings.
+                            Personalize your account settings and manage your C++ Hub presence.
                         </p>
                     </div>
                 </div>
 
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
                     {/* Main Profile Form */}
                     <div className="glass-morphism rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
                         {/* Form Header */}
                         <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-green-500/10 p-8 border-b border-white/10">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white mb-2">Personal Information</h2>
-                                    <p className="text-gray-300">Update your profile details and preferences</p>
+                            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
+                                <div className="flex items-center space-x-6">
+                                    <div className="relative">
+                                        <img
+                                            src={profilePicturePreview || 'https://placehold.co/80x80/000000/FFFFFF?text=User'}
+                                            alt="Profile Preview"
+                                            className="w-20 h-20 rounded-2xl object-cover border-3 border-white/30 shadow-xl"
+                                            onError={(e) => { e.currentTarget.src = 'https://placehold.co/80x80/000000/FFFFFF?text=User'; }}
+                                        />
+                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+                                            <Camera className="h-4 w-4 text-white" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-white mb-2">Personal Information</h2>
+                                        <p className="text-gray-300">Update your profile details and preferences</p>
+                                    </div>
                                 </div>
                                 <div className="flex items-center space-x-4">
-                                    <div className="text-right">
+                                    <div className="text-center lg:text-right">
                                         <p className="text-sm text-gray-400">User ID</p>
-                                        <p className="text-white font-bold">{user.id}</p>
+                                        <p className="text-white font-bold font-mono">{user.id}</p>
                                     </div>
-                                    <div className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-2 rounded-full border border-purple-500/30">
-                                        <Crown className="h-4 w-4 text-purple-400" />
-                                        <span className="text-purple-300 font-medium">{user.group}</span>
+                                    <div className={`flex items-center space-x-2 bg-gradient-to-r ${getGroupColor(user.group)} px-4 py-2 rounded-full shadow-lg`}>
+                                        <Crown className="h-4 w-4 text-white" />
+                                        <span className="text-white font-medium">{user.group}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+                        <form onSubmit={handleSubmit} className="p-8 space-y-10">
                             {message && (
                                 <div className={`flex items-center space-x-3 p-4 rounded-xl animate-fade-in ${message.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
                                     {message.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
@@ -274,7 +323,9 @@ const EditProfilePage: React.FC = () => {
                             {/* Ban Status Display */}
                             {isBanned() && (
                                 <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-6 flex items-center space-x-4 animate-fade-in">
-                                    <Ban className="h-8 w-8 text-red-400" />
+                                    <div className="p-3 bg-red-500/30 rounded-xl">
+                                        <Ban className="h-8 w-8 text-red-400" />
+                                    </div>
                                     <div>
                                         <h3 className="text-red-400 font-bold text-lg">Account Restricted</h3>
                                         <p className="text-red-300">Reason: {user.ban_reason}</p>
@@ -283,31 +334,72 @@ const EditProfilePage: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Profile Picture Section */}
+                            {/* Enhanced Profile Picture Section */}
                             <div className="space-y-6">
-                                <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-                                    <Camera className="h-5 w-5 text-blue-400" />
+                                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                                    <Camera className="h-6 w-6 text-blue-400" />
                                     <span>Profile Picture</span>
                                 </h3>
                                 
-                                <div className="flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
-                                    <div className="relative group">
-                                        <img
-                                            src={profilePicturePreview || 'https://placehold.co/128x128/000000/FFFFFF?text=User'}
-                                            alt="Profile Preview"
-                                            className="w-32 h-32 rounded-2xl object-cover border-4 border-white/20 shadow-xl group-hover:scale-105 transition-transform duration-300"
-                                            onError={(e) => { e.currentTarget.src = 'https://placehold.co/128x128/000000/FFFFFF?text=User'; }}
-                                        />
-                                        <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                            <Camera className="h-8 w-8 text-white" />
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                                    {/* Current Picture */}
+                                    <div className="flex justify-center">
+                                        <div className="relative group">
+                                            <img
+                                                src={profilePicturePreview || 'https://placehold.co/160x160/000000/FFFFFF?text=User'}
+                                                alt="Profile Preview"
+                                                className="w-40 h-40 rounded-2xl object-cover border-4 border-white/20 shadow-xl group-hover:scale-105 transition-transform duration-300"
+                                                onError={(e) => { e.currentTarget.src = 'https://placehold.co/160x160/000000/FFFFFF?text=User'; }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                                <Camera className="h-10 w-10 text-white" />
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex-1 space-y-4">
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <label className="flex-1 glass-morphism-dark border border-white/20 rounded-xl px-6 py-4 text-white cursor-pointer hover:bg-white/10 transition-all duration-300 flex items-center justify-center space-x-3 group">
+                                    {/* Upload Area */}
+                                    <div className="lg:col-span-2 space-y-4">
+                                        <div
+                                            className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                                                isDragOver 
+                                                    ? 'border-blue-400 bg-blue-500/10' 
+                                                    : 'border-white/30 hover:border-blue-400 hover:bg-blue-500/5'
+                                            }`}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            onClick={() => document.getElementById('profile-picture-input')?.click()}
+                                        >
+                                            <input
+                                                id="profile-picture-input"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                            />
+                                            <div className="space-y-4">
+                                                <div className="inline-flex p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl shadow-lg">
+                                                    <Upload className="h-8 w-8 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-white font-semibold text-lg mb-2">
+                                                        {profilePictureFile ? profilePictureFile.name : 'Upload New Photo'}
+                                                    </h4>
+                                                    <p className="text-gray-400 text-sm">
+                                                        Drag & drop or click to browse
+                                                    </p>
+                                                    <p className="text-gray-500 text-xs mt-1">
+                                                        Recommended: Square image, at least 400x400px
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-3">
+                                            <label className="flex-1 glass-morphism-dark border border-white/20 rounded-xl px-6 py-3 text-white cursor-pointer hover:bg-white/10 transition-all duration-300 flex items-center justify-center space-x-2 group">
                                                 <Image className="h-5 w-5 text-blue-400 group-hover:scale-110 transition-transform duration-300" />
-                                                <span className="font-medium">{profilePictureFile ? profilePictureFile.name : 'Choose New Photo'}</span>
+                                                <span className="font-medium">Choose File</span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
@@ -320,21 +412,25 @@ const EditProfilePage: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleClearProfilePicture}
-                                                    className="px-6 py-4 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-all duration-300 flex items-center space-x-2 border border-red-500/30"
+                                                    className="px-6 py-3 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-all duration-300 flex items-center space-x-2 border border-red-500/30"
                                                 >
                                                     <Trash2 className="h-5 w-5" />
                                                     <span>Remove</span>
                                                 </button>
                                             )}
                                         </div>
-                                        <p className="text-gray-400 text-sm">Recommended: Square image, at least 400x400px</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Form Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div className="space-y-6">
+                                    <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                                        <User className="h-5 w-5 text-blue-400" />
+                                        <span>Basic Information</span>
+                                    </h3>
+                                    
                                     <div>
                                         <label className="block text-sm font-bold text-gray-300 mb-3">Full Name</label>
                                         <div className="relative group">
@@ -366,9 +462,7 @@ const EditProfilePage: React.FC = () => {
                                             />
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-6">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-300 mb-3">Nationality</label>
                                         <div className="relative group">
@@ -383,22 +477,51 @@ const EditProfilePage: React.FC = () => {
                                             />
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="flex items-center space-x-4 p-4 glass-morphism-dark rounded-xl border border-white/10">
-                                        <input
-                                            type="checkbox"
-                                            id="is_profile_public"
-                                            name="is_profile_public"
-                                            checked={formData.is_profile_public}
-                                            onChange={handleInputChange}
-                                            className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-white/10"
-                                        />
-                                        <div className="flex-1">
-                                            <label htmlFor="is_profile_public" className="text-white font-medium cursor-pointer flex items-center space-x-2">
-                                                {formData.is_profile_public ? <Eye className="h-4 w-4 text-green-400" /> : <EyeOff className="h-4 w-4 text-gray-400" />}
-                                                <span>Make profile public</span>
+                                <div className="space-y-6">
+                                    <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+                                        <Settings className="h-5 w-5 text-purple-400" />
+                                        <span>Privacy Settings</span>
+                                    </h3>
+                                    
+                                    <div className="glass-morphism-dark rounded-xl p-6 border border-white/10 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                {formData.is_profile_public ? <Eye className="h-5 w-5 text-green-400" /> : <EyeOff className="h-5 w-5 text-gray-400" />}
+                                                <div>
+                                                    <label htmlFor="is_profile_public" className="text-white font-medium cursor-pointer">
+                                                        Public Profile
+                                                    </label>
+                                                    <p className="text-gray-400 text-sm">Allow other users to view your profile</p>
+                                                </div>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    id="is_profile_public"
+                                                    name="is_profile_public"
+                                                    checked={formData.is_profile_public}
+                                                    onChange={handleInputChange}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-green-500"></div>
                                             </label>
-                                            <p className="text-gray-400 text-sm mt-1">Allow other users to view your profile</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Account Stats */}
+                                    <div className="glass-morphism-dark rounded-xl p-6 border border-white/10">
+                                        <h4 className="text-white font-semibold mb-4">Account Statistics</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-blue-400">12</div>
+                                                <div className="text-gray-400 text-sm">Courses</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-green-400">89h</div>
+                                                <div className="text-gray-400 text-sm">Learning</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -406,19 +529,24 @@ const EditProfilePage: React.FC = () => {
 
                             {/* Bio Section */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-300 mb-3">Bio</label>
+                                <label className="block text-sm font-bold text-gray-300 mb-3 flex items-center space-x-2">
+                                    <MessageSquare className="h-5 w-5 text-green-400" />
+                                    <span>Bio</span>
+                                </label>
                                 <textarea
                                     name="bio"
                                     value={formData.bio}
                                     onChange={handleInputChange}
-                                    rows={4}
+                                    rows={5}
                                     className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all duration-300 resize-none"
-                                    placeholder="Tell us about yourself... (max 1000 characters)"
+                                    placeholder="Tell us about yourself, your programming journey, goals, or interests... (max 1000 characters)"
                                     maxLength={1000}
                                 />
                                 <div className="flex justify-between items-center mt-2">
-                                    <p className="text-gray-400 text-sm">Share your interests, goals, or programming experience</p>
-                                    <span className="text-gray-400 text-sm">{formData.bio.length}/1000</span>
+                                    <p className="text-gray-400 text-sm">Share your story with the C++ Hub community</p>
+                                    <span className={`text-sm ${formData.bio.length > 900 ? 'text-orange-400' : 'text-gray-400'}`}>
+                                        {formData.bio.length}/1000
+                                    </span>
                                 </div>
                             </div>
 
@@ -427,7 +555,7 @@ const EditProfilePage: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-green-500 text-white font-bold py-4 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-3 text-lg hover:from-blue-600 hover:via-cyan-600 hover:to-green-600 transition-all duration-300 hover:scale-105"
+                                    className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-green-500 text-white font-bold py-5 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-3 text-lg hover:from-blue-600 hover:via-cyan-600 hover:to-green-600 transition-all duration-300 hover:scale-105 transform-gpu"
                                 >
                                     {loading ? (
                                         <><Loader className="h-6 w-6 animate-spin" /><span>Saving Changes...</span></>
