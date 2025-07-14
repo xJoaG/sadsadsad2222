@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Search, Ban, UserCheck, Users, Loader, AlertCircle, CheckCircle, Eye, EyeOff, XCircle, Clock, MessageSquare, Mail, Globe, Image, Crown } from 'lucide-react';
+import { User, Search, Ban, UserCheck, Users, Loader, AlertCircle, CheckCircle, Eye, EyeOff, XCircle, Clock, MessageSquare, Mail, Globe, Image, Crown, Shield, Settings, Calendar, Activity, Filter, MoreVertical } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ParticleNetwork from '../components/ParticleNetwork';
@@ -23,14 +23,13 @@ apiClient.interceptors.request.use(config => {
     return config;
 });
 
-// Define the groups for dropdowns (should match backend's User::GROUP_HIERARCHY keys)
 const ALL_GROUPS = ['Basic Plan', 'Premium Plan', 'Junior Support', 'Support', 'Senior Support', 'Admin', 'Owner'];
 
 interface UserProfileData {
     id: number;
     username: string;
-    name?: string; // Only if viewer has privilege or is owner
-    email?: string; // Only if viewer has privilege or is owner
+    name?: string;
+    email?: string;
     bio: string | null;
     nationality: string | null;
     profile_picture_url: string | null;
@@ -54,33 +53,29 @@ const AdminPanelPage: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<UserProfileData | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
-    // Admin action states
     const [banReason, setBanReason] = useState('');
-    const [bannedUntil, setBannedUntil] = useState(''); // ISO date string for temporary ban
+    const [bannedUntil, setBannedUntil] = useState('');
     const [newGroup, setNewGroup] = useState('');
     const [adminActionLoading, setAdminActionLoading] = useState(false);
     const [adminActionMessage, setAdminActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    // Authorization checks
     const canAccessPanel = hasPrivilege(['Junior Support', 'Support', 'Senior Support', 'Admin', 'Owner']);
     const canBan = hasPrivilege(['Admin', 'Owner', 'Senior Support']);
     const canChangeGroup = hasPrivilege(['Admin', 'Owner']);
-    const canSeeFullInfo = hasPrivilege(['Admin', 'Owner', 'Senior Support']); // Same as ban privilege for full info
+    const canSeeFullInfo = hasPrivilege(['Admin', 'Owner', 'Senior Support']);
 
-    // Redirect if not authorized
     useEffect(() => {
         if (!authLoading && !canAccessPanel) {
-            navigate('/'); // Redirect non-authorized users
+            navigate('/');
         }
     }, [authLoading, canAccessPanel, navigate]);
 
-    // Handle user search
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         setSearchLoading(true);
         setSearchResults([]);
         setSearchError(null);
-        setSelectedUser(null); // Clear selected user on new search
+        setSelectedUser(null);
 
         if (!searchQuery.trim()) {
             setSearchError('Please enter a user ID or username to search.');
@@ -89,14 +84,12 @@ const AdminPanelPage: React.FC = () => {
         }
 
         try {
-            // Attempt to search by ID first, then by username
             let userFound = false;
             let response;
             try {
                 response = await apiClient.get(`/users/${searchQuery.trim()}/profile`);
                 userFound = true;
             } catch (idErr: any) {
-                // If not found by ID, try searching by username (if search query is not purely numeric)
                 if (isNaN(Number(searchQuery.trim()))) {
                     response = await apiClient.get(`/users/${searchQuery.trim()}/profile`);
                     userFound = true;
@@ -120,9 +113,9 @@ const AdminPanelPage: React.FC = () => {
         setSelectedUser(user);
         setModalOpen(true);
         setBanReason(user.ban_reason || '');
-        setBannedUntil(user.banned_until ? new Date(user.banned_until).toISOString().slice(0, 16) : ''); // Format for datetime-local
+        setBannedUntil(user.banned_until ? new Date(user.banned_until).toISOString().slice(0, 16) : '');
         setNewGroup(user.group);
-        setAdminActionMessage(null); // Clear previous messages
+        setAdminActionMessage(null);
     };
 
     const closeModal = () => {
@@ -131,7 +124,6 @@ const AdminPanelPage: React.FC = () => {
         setAdminActionMessage(null);
     };
 
-    // Admin Action Handlers (copied/adapted from EditProfilePage for consistency)
     const handleBanUser = async (permanent: boolean = false) => {
         if (!selectedUser?.id) return;
         if ((!permanent && !bannedUntil) || !banReason) {
@@ -149,7 +141,6 @@ const AdminPanelPage: React.FC = () => {
             }
             await apiClient.post(`/admin/users/${selectedUser.id}/ban`, data);
             setAdminActionMessage({ type: 'success', text: `User ${selectedUser.username} banned successfully!` });
-            // Update selected user's ban status in state
             setSelectedUser(prev => prev ? { ...prev, banned_until: data.banned_until || null, ban_reason: banReason } : null);
         } catch (error: any) {
             console.error('Failed to ban user:', error);
@@ -167,7 +158,6 @@ const AdminPanelPage: React.FC = () => {
         try {
             await apiClient.post(`/admin/users/${selectedUser.id}/unban`);
             setAdminActionMessage({ type: 'success', text: `User ${selectedUser.username} unbanned successfully!` });
-            // Update selected user's ban status in state
             setSelectedUser(prev => prev ? { ...prev, banned_until: null, ban_reason: null } : null);
         } catch (error: any) {
             console.error('Failed to unban user:', error);
@@ -188,7 +178,6 @@ const AdminPanelPage: React.FC = () => {
         try {
             await apiClient.put(`/admin/users/${selectedUser.id}/group`, { group: newGroup });
             setAdminActionMessage({ type: 'success', text: `User ${selectedUser.username} group updated to ${newGroup}!` });
-            // Update selected user's group in state
             setSelectedUser(prev => prev ? { ...prev, group: newGroup } : null);
         } catch (error: any) {
             console.error('Failed to update group:', error);
@@ -202,8 +191,10 @@ const AdminPanelPage: React.FC = () => {
     if (authLoading || !canAccessPanel) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-                <Loader className="h-12 w-12 text-white animate-spin" />
-                <p className="text-white ml-4">Loading admin panel...</p>
+                <div className="glass-morphism rounded-2xl p-8 border border-white/20 flex items-center space-x-4">
+                    <Loader className="h-8 w-8 text-indigo-400 animate-spin" />
+                    <p className="text-white text-lg">Loading admin panel...</p>
+                </div>
             </div>
         );
     }
@@ -214,250 +205,395 @@ const AdminPanelPage: React.FC = () => {
             <Navbar />
             
             <div className="pt-20 pb-16">
-                {/* Page Header */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-                        Admin
-                        <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent"> Panel</span>
-                    </h1>
-                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                        Manage users, groups, and moderation actions.
-                    </p>
+                {/* Enhanced Header */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center space-x-3 glass-morphism rounded-full px-8 py-4 mb-8 border border-white/20 shadow-lg">
+                            <Shield className="h-6 w-6 text-red-400 animate-pulse" />
+                            <span className="text-white font-bold text-lg">Admin Control Center</span>
+                            <Settings className="h-6 w-6 text-blue-400" />
+                        </div>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
+                            Admin
+                            <span className="block bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent"> 
+                                Dashboard
+                            </span>
+                        </h1>
+                        <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+                            Manage users, permissions, and platform moderation with advanced administrative tools.
+                        </p>
+                    </div>
+
+                    {/* Admin Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        <div className="glass-morphism rounded-2xl p-6 border border-white/20 hover:border-red-400/30 transition-all duration-300 group">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <Ban className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-2xl font-black text-red-400">0</span>
+                            </div>
+                            <h3 className="text-white font-semibold mb-1">Active Bans</h3>
+                            <p className="text-gray-400 text-sm">Currently banned users</p>
+                        </div>
+
+                        <div className="glass-morphism rounded-2xl p-6 border border-white/20 hover:border-blue-400/30 transition-all duration-300 group">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <Users className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-2xl font-black text-blue-400">50K+</span>
+                            </div>
+                            <h3 className="text-white font-semibold mb-1">Total Users</h3>
+                            <p className="text-gray-400 text-sm">Registered members</p>
+                        </div>
+
+                        <div className="glass-morphism rounded-2xl p-6 border border-white/20 hover:border-green-400/30 transition-all duration-300 group">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <Activity className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-2xl font-black text-green-400">1.2K</span>
+                            </div>
+                            <h3 className="text-white font-semibold mb-1">Active Today</h3>
+                            <p className="text-gray-400 text-sm">Users online now</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="glass-morphism rounded-3xl p-8 border border-white/20 shadow-2xl space-y-8 animate-fade-in">
-                        {/* User Search Section */}
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-white mb-4">Search Users</h2>
-                            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-                                <div className="relative flex-1">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="glass-morphism rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
+                        {/* Enhanced Search Section */}
+                        <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 p-8 border-b border-white/10">
+                            <div className="flex items-center space-x-3 mb-6">
+                                <Search className="h-6 w-6 text-blue-400" />
+                                <h2 className="text-2xl font-bold text-white">User Search & Management</h2>
+                            </div>
+                            
+                            <form onSubmit={handleSearch} className="space-y-4">
+                                <div className="relative">
                                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-blue-400"
-                                        placeholder="Search by User ID or Username"
+                                        className="w-full bg-white/5 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all duration-300"
+                                        placeholder="Search by User ID, Username, or Email..."
                                     />
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={searchLoading}
-                                    className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-blue-600 hover:to-cyan-600 transition-all duration-300"
-                                >
-                                    {searchLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-                                    <span>Search</span>
-                                </button>
+                                
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button
+                                        type="submit"
+                                        disabled={searchLoading}
+                                        className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 hover:scale-105"
+                                    >
+                                        {searchLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+                                        <span>{searchLoading ? 'Searching...' : 'Search User'}</span>
+                                    </button>
+                                    
+                                    <button
+                                        type="button"
+                                        className="px-6 py-4 glass-morphism-dark text-white font-semibold rounded-xl border border-white/20 hover:bg-white/10 transition-all duration-300 flex items-center space-x-2"
+                                    >
+                                        <Filter className="h-5 w-5" />
+                                        <span>Advanced Filters</span>
+                                    </button>
+                                </div>
                             </form>
+
                             {searchError && (
-                                <div className="text-red-400 text-sm mt-4 flex items-center space-x-2">
-                                    <AlertCircle className="h-4 w-4" />
-                                    <span>{searchError}</span>
+                                <div className="mt-4 bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center space-x-3 animate-fade-in">
+                                    <AlertCircle className="h-5 w-5 text-red-400" />
+                                    <span className="text-red-300">{searchError}</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* Search Results */}
+                        {/* Enhanced Search Results */}
                         {searchResults.length > 0 && (
-                            <div className="border-t border-white/10 pt-8">
-                                <h2 className="text-2xl font-bold text-white mb-4">Search Results</h2>
+                            <div className="p-8">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+                                    <Users className="h-5 w-5 text-blue-400" />
+                                    <span>Search Results</span>
+                                </h3>
+                                
                                 <div className="space-y-4">
                                     {searchResults.map(user => (
-                                        <div key={user.id} className="bg-white/5 border border-white/20 rounded-xl p-4 flex items-center justify-between">
-                                            <div className="flex items-center space-x-4">
-                                                <img
-                                                    src={user.profile_picture_url || 'https://placehold.co/48x48/000000/FFFFFF?text=U'}
-                                                    alt={user.username}
-                                                    className="w-12 h-12 rounded-full object-cover border border-white/20"
-                                                    onError={(e) => { e.currentTarget.src = 'https://placehold.co/48x48/000000/FFFFFF?text=U'; }}
-                                                />
-                                                <div>
-                                                    <p className="text-white font-semibold">{user.username}</p>
-                                                    <p className="text-gray-400 text-sm">ID: {user.id} | Group: {user.group}</p>
-                                                    {user.banned_until && new Date(user.banned_until) > new Date() && (
-                                                        <p className="text-red-400 text-xs flex items-center space-x-1">
-                                                            <Ban className="h-3 w-3" /> <span>Banned</span>
-                                                        </p>
-                                                    )}
+                                        <div key={user.id} className="glass-morphism-dark rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 group">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="relative">
+                                                        <img
+                                                            src={user.profile_picture_url || 'https://placehold.co/64x64/000000/FFFFFF?text=U'}
+                                                            alt={user.username}
+                                                            className="w-16 h-16 rounded-xl object-cover border-2 border-white/20 shadow-lg"
+                                                            onError={(e) => { e.currentTarget.src = 'https://placehold.co/64x64/000000/FFFFFF?text=U'; }}
+                                                        />
+                                                        {user.banned_until && new Date(user.banned_until) > new Date() && (
+                                                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                                                                <Ban className="h-3 w-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center space-x-3">
+                                                            <h4 className="text-white font-bold text-lg">{user.username}</h4>
+                                                            <div className="flex items-center space-x-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-3 py-1 rounded-full border border-purple-500/30">
+                                                                <Crown className="h-3 w-3 text-purple-400" />
+                                                                <span className="text-purple-300 text-xs font-medium">{user.group}</span>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-gray-400 text-sm">ID: {user.id}</p>
+                                                        {user.banned_until && new Date(user.banned_until) > new Date() && (
+                                                            <div className="flex items-center space-x-2 text-red-400 text-xs">
+                                                                <Ban className="h-3 w-3" />
+                                                                <span>Banned until {new Date(user.banned_until).toLocaleDateString()}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                
+                                                <button
+                                                    onClick={() => handleViewUserDetails(user)}
+                                                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:scale-105"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                    <span>Manage User</span>
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={() => handleViewUserDetails(user)}
-                                                className="bg-indigo-500/20 text-indigo-400 px-4 py-2 rounded-lg font-medium hover:bg-indigo-500/30 transition-colors duration-200"
-                                            >
-                                                View Details
-                                            </button>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* User Details Modal */}
+                        {/* Enhanced User Details Modal */}
                         {modalOpen && selectedUser && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg">
-                                <div className="bg-white/10 rounded-3xl border border-white/20 p-8 max-w-2xl w-full shadow-2xl animate-fade-in relative">
-                                    <button onClick={closeModal} className="absolute top-4 right-4 text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10"><XCircle className="h-6 w-6" /></button>
-                                    <h2 className="text-3xl font-bold text-white mb-6 text-center">User Details: {selectedUser.username}</h2>
-                                    
-                                    <div className="flex flex-col items-center mb-6">
-                                        <img
-                                            src={selectedUser.profile_picture_url || 'https://placehold.co/128x128/000000/FFFFFF?text=User'}
-                                            alt={selectedUser.username}
-                                            className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white/30 shadow-lg"
-                                            onError={(e) => { e.currentTarget.src = 'https://placehold.co/128x128/000000/FFFFFF?text=User'; }}
-                                        />
-                                        <p className="text-white text-xl font-semibold mb-2">{selectedUser.username}</p>
-                                        <p className="text-gray-400 text-md flex items-center space-x-2">
-                                            <Crown className="h-4 w-4 text-yellow-400" />
-                                            <span>{selectedUser.group}</span>
-                                        </p>
-                                    </div>
-
-                                    {selectedUser.banned_until && new Date(selectedUser.banned_until) > new Date() && (
-                                        <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center space-x-3">
-                                            <Ban className="h-6 w-6 text-red-400" />
-                                            <div>
-                                                <h3 className="text-red-400 font-bold">This user is currently banned!</h3>
-                                                <p className="text-red-300 text-sm">Reason: {selectedUser.ban_reason}</p>
-                                                <p className="text-red-300 text-xs">Until: {new Date(selectedUser.banned_until).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left mb-6">
-                                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                            <p className="text-gray-400 text-sm">User ID:</p>
-                                            <p className="text-white font-medium">{selectedUser.id}</p>
-                                        </div>
-                                        {selectedUser.name && canSeeFullInfo && (
-                                            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                                <p className="text-gray-400 text-sm">Full Name:</p>
-                                                <p className="text-white font-medium">{selectedUser.name}</p>
-                                            </div>
-                                        )}
-                                        {selectedUser.email && canSeeFullInfo && (
-                                            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                                <p className="text-gray-400 text-sm">Email:</p>
-                                                <p className="text-white font-medium">{selectedUser.email}</p>
-                                            </div>
-                                        )}
-                                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                            <p className="text-gray-400 text-sm">Profile Public:</p>
-                                            <p className="text-white font-medium">{selectedUser.is_profile_public ? 'Yes' : 'No'}</p>
-                                        </div>
-                                        {selectedUser.nationality && (
-                                            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                                <p className="text-gray-400 text-sm">Nationality:</p>
-                                                <p className="text-white font-medium">{selectedUser.nationality}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {selectedUser.bio && (
-                                        <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-6">
-                                            <p className="text-gray-400 text-sm">Bio:</p>
-                                            <p className="text-white font-medium">{selectedUser.bio}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Admin Actions within Modal */}
-                                    {(canBan || canChangeGroup) && (
-                                        <div className="border-t border-white/10 pt-6 mt-6 space-y-6">
-                                            <h3 className="text-xl font-bold text-white mb-4">Actions for {selectedUser.username}</h3>
-                                            {adminActionMessage && (
-                                                <div className={`flex items-center space-x-2 p-3 rounded-lg ${adminActionMessage.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                                                    {adminActionMessage.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-                                                    <p className="text-sm">{adminActionMessage.text}</p>
-                                                </div>
-                                            )}
-
-                                            {/* Ban/Unban Section */}
-                                            {canBan && (
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label htmlFor="banReasonModal" className="block text-sm font-bold text-gray-300 mb-2">Ban Reason</label>
-                                                        <textarea
-                                                            id="banReasonModal"
-                                                            name="banReasonModal"
-                                                            value={banReason}
-                                                            onChange={(e) => setBanReason(e.target.value)}
-                                                            rows={2}
-                                                            className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-red-400 resize-y"
-                                                            placeholder="Reason for banning"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label htmlFor="bannedUntilModal" className="block text-sm font-bold text-gray-300 mb-2">Banned Until (Optional)</label>
-                                                        <input
-                                                            type="datetime-local"
-                                                            id="bannedUntilModal"
-                                                            name="bannedUntilModal"
-                                                            value={bannedUntil}
-                                                            onChange={(e) => setBannedUntil(e.target.value)}
-                                                            className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-400"
-                                                        />
-                                                        <p className="text-gray-400 text-xs mt-1">Leave empty for permanent ban.</p>
-                                                    </div>
-                                                    <div className="flex flex-col sm:flex-row gap-4">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleBanUser(false)}
-                                                            disabled={adminActionLoading}
-                                                            className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-red-600 hover:to-orange-600 transition-all duration-300"
-                                                        >
-                                                            {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Ban className="h-5 w-5" />}
-                                                            <span>{bannedUntil ? 'Temporarily Ban' : 'Permanent Ban'}</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleUnbanUser}
-                                                            disabled={adminActionLoading}
-                                                            className="flex-1 bg-white/10 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:bg-white/20 transition-all duration-300 border border-white/20"
-                                                        >
-                                                            {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <UserCheck className="h-5 w-5 text-green-400" />}
-                                                            <span>Unban User</span>
-                                                        </button>
+                                <div className="glass-morphism rounded-3xl border border-white/20 w-full max-w-4xl shadow-2xl animate-fade-in relative overflow-hidden">
+                                    {/* Modal Header */}
+                                    <div className="bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 p-6 border-b border-white/10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-4">
+                                                <img
+                                                    src={selectedUser.profile_picture_url || 'https://placehold.co/64x64/000000/FFFFFF?text=User'}
+                                                    alt={selectedUser.username}
+                                                    className="w-16 h-16 rounded-xl object-cover border-2 border-white/30 shadow-lg"
+                                                    onError={(e) => { e.currentTarget.src = 'https://placehold.co/64x64/000000/FFFFFF?text=User'; }}
+                                                />
+                                                <div>
+                                                    <h2 className="text-2xl font-bold text-white">{selectedUser.username}</h2>
+                                                    <div className="flex items-center space-x-2 mt-1">
+                                                        <Crown className="h-4 w-4 text-yellow-400" />
+                                                        <span className="text-yellow-400 font-medium">{selectedUser.group}</span>
                                                     </div>
                                                 </div>
-                                            )}
+                                            </div>
+                                            <button 
+                                                onClick={closeModal} 
+                                                className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all duration-200"
+                                            >
+                                                <XCircle className="h-6 w-6" />
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                            {/* Change Group Section */}
-                                            {canChangeGroup && (
-                                                <div className="border-t border-white/10 pt-6 mt-6 space-y-4">
-                                                    <div>
-                                                        <label htmlFor="newGroupModal" className="block text-sm font-bold text-gray-300 mb-2">New Group</label>
-                                                        <div className="relative">
-                                                            <select
-                                                                id="newGroupModal"
-                                                                name="newGroupModal"
-                                                                value={newGroup}
-                                                                onChange={(e) => setNewGroup(e.target.value)}
-                                                                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-400 appearance-none pr-10"
-                                                            >
-                                                                {ALL_GROUPS.map(group => (
-                                                                    <option key={group} value={group}>{group}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                                                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                    <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                        {/* Ban Status Alert */}
+                                        {selectedUser.banned_until && new Date(selectedUser.banned_until) > new Date() && (
+                                            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6 flex items-center space-x-3 animate-fade-in">
+                                                <Ban className="h-6 w-6 text-red-400" />
+                                                <div>
+                                                    <h3 className="text-red-400 font-bold">User is currently banned</h3>
+                                                    <p className="text-red-300 text-sm">Reason: {selectedUser.ban_reason}</p>
+                                                    <p className="text-red-300 text-xs">Until: {new Date(selectedUser.banned_until).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* User Information Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                                                    <User className="h-5 w-5 text-blue-400" />
+                                                    <span>User Information</span>
+                                                </h3>
+                                                
+                                                <div className="space-y-3">
+                                                    <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                        <p className="text-gray-400 text-sm mb-1">User ID</p>
+                                                        <p className="text-white font-medium">{selectedUser.id}</p>
+                                                    </div>
+                                                    
+                                                    {selectedUser.name && canSeeFullInfo && (
+                                                        <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                            <p className="text-gray-400 text-sm mb-1">Full Name</p>
+                                                            <p className="text-white font-medium">{selectedUser.name}</p>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {selectedUser.email && canSeeFullInfo && (
+                                                        <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                            <p className="text-gray-400 text-sm mb-1">Email</p>
+                                                            <p className="text-white font-medium">{selectedUser.email}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                                                    <Settings className="h-5 w-5 text-purple-400" />
+                                                    <span>Profile Settings</span>
+                                                </h3>
+                                                
+                                                <div className="space-y-3">
+                                                    <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                        <p className="text-gray-400 text-sm mb-1">Profile Visibility</p>
+                                                        <p className="text-white font-medium">{selectedUser.is_profile_public ? 'Public' : 'Private'}</p>
+                                                    </div>
+                                                    
+                                                    {selectedUser.nationality && (
+                                                        <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                            <p className="text-gray-400 text-sm mb-1">Nationality</p>
+                                                            <p className="text-white font-medium">{selectedUser.nationality}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {selectedUser.bio && (
+                                            <div className="mb-8">
+                                                <h3 className="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                                                    <MessageSquare className="h-5 w-5 text-green-400" />
+                                                    <span>Bio</span>
+                                                </h3>
+                                                <div className="glass-morphism-dark rounded-lg p-4 border border-white/10">
+                                                    <p className="text-gray-300 leading-relaxed">{selectedUser.bio}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Admin Actions */}
+                                        {(canBan || canChangeGroup) && (
+                                            <div className="border-t border-white/10 pt-8">
+                                                <h3 className="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+                                                    <Shield className="h-6 w-6 text-red-400" />
+                                                    <span>Administrative Actions</span>
+                                                </h3>
+
+                                                {adminActionMessage && (
+                                                    <div className={`flex items-center space-x-2 p-4 rounded-xl mb-6 ${adminActionMessage.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                                        {adminActionMessage.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                                                        <p className="font-medium">{adminActionMessage.text}</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                                    {/* Ban Section */}
+                                                    {canBan && (
+                                                        <div className="space-y-6">
+                                                            <h4 className="text-lg font-bold text-red-400 flex items-center space-x-2">
+                                                                <Ban className="h-5 w-5" />
+                                                                <span>User Moderation</span>
+                                                            </h4>
+                                                            
+                                                            <div className="space-y-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-bold text-gray-300 mb-2">Ban Reason</label>
+                                                                    <textarea
+                                                                        value={banReason}
+                                                                        onChange={(e) => setBanReason(e.target.value)}
+                                                                        rows={3}
+                                                                        className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-red-400 resize-none"
+                                                                        placeholder="Specify the reason for this action..."
+                                                                    />
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <label className="block text-sm font-bold text-gray-300 mb-2">Ban Duration (Optional)</label>
+                                                                    <div className="relative">
+                                                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                                                        <input
+                                                                            type="datetime-local"
+                                                                            value={bannedUntil}
+                                                                            onChange={(e) => setBannedUntil(e.target.value)}
+                                                                            className="w-full bg-white/5 border border-white/20 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-red-400"
+                                                                        />
+                                                                    </div>
+                                                                    <p className="text-gray-400 text-xs mt-1">Leave empty for permanent ban</p>
+                                                                </div>
+                                                                
+                                                                <div className="flex flex-col gap-3">
+                                                                    <button
+                                                                        onClick={() => handleBanUser(false)}
+                                                                        disabled={adminActionLoading}
+                                                                        className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-red-600 hover:to-orange-600 transition-all duration-300"
+                                                                    >
+                                                                        {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Ban className="h-5 w-5" />}
+                                                                        <span>{bannedUntil ? 'Temporary Ban' : 'Permanent Ban'}</span>
+                                                                    </button>
+                                                                    
+                                                                    <button
+                                                                        onClick={handleUnbanUser}
+                                                                        disabled={adminActionLoading}
+                                                                        className="w-full glass-morphism-dark text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:bg-white/20 transition-all duration-300 border border-white/20"
+                                                                    >
+                                                                        {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <UserCheck className="h-5 w-5 text-green-400" />}
+                                                                        <span>Remove Ban</span>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleUpdateGroup}
-                                                        disabled={adminActionLoading}
-                                                        className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-purple-600 hover:to-indigo-600 transition-all duration-300"
-                                                    >
-                                                        {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Users className="h-5 w-5" />}
-                                                        <span>Update Group</span>
-                                                    </button>
+                                                    )}
+
+                                                    {/* Group Management */}
+                                                    {canChangeGroup && (
+                                                        <div className="space-y-6">
+                                                            <h4 className="text-lg font-bold text-purple-400 flex items-center space-x-2">
+                                                                <Users className="h-5 w-5" />
+                                                                <span>Group Management</span>
+                                                            </h4>
+                                                            
+                                                            <div className="space-y-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-bold text-gray-300 mb-2">Assign New Group</label>
+                                                                    <div className="relative">
+                                                                        <select
+                                                                            value={newGroup}
+                                                                            onChange={(e) => setNewGroup(e.target.value)}
+                                                                            className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-400 appearance-none pr-10"
+                                                                        >
+                                                                            {ALL_GROUPS.map(group => (
+                                                                                <option key={group} value={group} className="bg-gray-800">{group}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                                                                            </svg>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <button
+                                                                    onClick={handleUpdateGroup}
+                                                                    disabled={adminActionLoading}
+                                                                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2 hover:from-purple-600 hover:to-indigo-600 transition-all duration-300"
+                                                                >
+                                                                    {adminActionLoading ? <Loader className="h-5 w-5 animate-spin" /> : <Users className="h-5 w-5" />}
+                                                                    <span>Update Group</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
